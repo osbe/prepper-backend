@@ -1,5 +1,6 @@
 package se.oskr;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -22,12 +23,14 @@ public class ProductResource implements ProductsApi {
   @Inject StockService stockService;
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public List<se.oskr.model.Product> listProducts(se.oskr.model.Category category) {
     var coreCategory = category != null ? Category.valueOf(category.name()) : null;
     return productService.list(coreCategory).stream().map(this::toProductDto).toList();
   }
 
   @Override
+  @RolesAllowed("admin")
   public se.oskr.model.Product createProduct(ProductRequest body) {
     var product =
         productService.create(
@@ -40,11 +43,13 @@ public class ProductResource implements ProductsApi {
   }
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public se.oskr.model.Product getProduct(Long id) {
     return productService.findById(id).map(this::toProductDto).orElseThrow(NotFoundException::new);
   }
 
   @Override
+  @RolesAllowed("admin")
   public se.oskr.model.Product updateProduct(Long id, ProductRequest body) {
     return productService
         .update(
@@ -59,6 +64,7 @@ public class ProductResource implements ProductsApi {
   }
 
   @Override
+  @RolesAllowed("admin")
   public void deleteProduct(Long id) {
     if (!productService.delete(id)) {
       throw new NotFoundException();
@@ -66,6 +72,7 @@ public class ProductResource implements ProductsApi {
   }
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public List<se.oskr.model.StockEntry> listProductStock(Long id) {
     if (productService.findById(id).isEmpty()) {
       throw new NotFoundException();
@@ -74,6 +81,7 @@ public class ProductResource implements ProductsApi {
   }
 
   @Override
+  @RolesAllowed("admin")
   public se.oskr.model.StockEntry createStockEntry(Long id, StockEntryRequest body) {
     return stockService
         .create(

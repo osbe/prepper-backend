@@ -1,5 +1,6 @@
 package se.oskr;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -19,22 +20,26 @@ public class StockResource implements StockApi {
   @Inject ProductService productService;
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public List<se.oskr.model.StockEntry> getExpiredStock() {
     return stockService.listExpired().stream().map(this::toStockEntryDto).toList();
   }
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public List<se.oskr.model.StockEntry> getExpiringStock(Integer days) {
     int d = days != null ? days : 30;
     return stockService.listExpiring(d).stream().map(this::toStockEntryDto).toList();
   }
 
   @Override
+  @RolesAllowed({"user", "admin"})
   public List<se.oskr.model.Product> getLowStock() {
     return productService.listLowStock().stream().map(this::toProductDto).toList();
   }
 
   @Override
+  @RolesAllowed("admin")
   public se.oskr.model.StockEntry updateStockEntry(Long id, StockEntryPatch body) {
     return stockService
         .updateQuantity(id, body.getQuantity())
@@ -43,6 +48,7 @@ public class StockResource implements StockApi {
   }
 
   @Override
+  @RolesAllowed("admin")
   public void deleteStockEntry(Long id) {
     if (!stockService.delete(id)) {
       throw new NotFoundException();

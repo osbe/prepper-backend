@@ -13,13 +13,22 @@ class ProductResourceTest {
 
   @Test
   void listProductsReturnsEmptyInitially() {
-    given().when().get("/products").then().statusCode(200).body("$", hasSize(0));
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .when()
+        .get("/products")
+        .then()
+        .statusCode(200)
+        .body("$", hasSize(0));
   }
 
   @Test
   void createAndGetProduct() {
     var id =
         given()
+            .auth()
+            .basic("admin", "admin")
             .contentType(ContentType.JSON)
             .body(
                 """
@@ -41,17 +50,25 @@ class ProductResourceTest {
             .path("id");
 
     given()
+        .auth()
+        .basic("admin", "admin")
         .when()
         .get("/products/{id}", id)
         .then()
         .statusCode(200)
         .body("name", is("Mineral Water"));
 
-    given().when().delete("/products/{id}", id).then().statusCode(204);
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .when()
+        .delete("/products/{id}", id)
+        .then()
+        .statusCode(204);
   }
 
   @Test
   void getNonExistentProductReturns404() {
-    given().when().get("/products/99999").then().statusCode(404);
+    given().auth().basic("admin", "admin").when().get("/products/99999").then().statusCode(404);
   }
 }
