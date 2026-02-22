@@ -3,16 +3,321 @@ info:
   title: Prepper Backend API
   version: 0.1.0
 paths:
-  /hello:
+  /products:
     get:
-      summary: Returns a greeting message
-      operationId: hello
+      summary: List all products
+      operationId: listProducts
       tags:
-        - Hello
+        - Products
+      parameters:
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/Category'
       responses:
         "200":
-          description: Greeting message
+          description: List of products with current stock
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      summary: Create a product
+      operationId: createProduct
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        "200":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+  /products/{id}:
+    get:
+      summary: Get a product with current stock
+      operationId: getProduct
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        "200":
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        "404":
+          description: Not found
+    put:
+      summary: Update a product
+      operationId: updateProduct
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a product and all its stock entries
+      operationId: deleteProduct
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+  /products/{id}/stock:
+    get:
+      summary: List stock entries for a product, ordered by expiry date (oldest first)
+      operationId: listProductStock
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        "200":
+          description: Stock entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockEntry'
+        "404":
+          description: Product not found
+    post:
+      summary: Add a stock entry for a product
+      operationId: createStockEntry
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockEntryRequest'
+      responses:
+        "200":
+          description: Created stock entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockEntry'
+        "404":
+          description: Product not found
+  /stock/expiring:
+    get:
+      summary: Get stock entries expiring within N days
+      operationId: getExpiringStock
+      tags:
+        - Stock
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Expiring stock entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockEntry'
+  /stock/low:
+    get:
+      summary: Get products where current stock is below target quantity
+      operationId: getLowStock
+      tags:
+        - Stock
+      responses:
+        "200":
+          description: Products with low stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+  /stock/{id}:
+    patch:
+      summary: Update remaining quantity of a stock entry
+      operationId: updateStockEntry
+      tags:
+        - Stock
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockEntryPatch'
+      responses:
+        "200":
+          description: Updated stock entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockEntry'
+        "404":
+          description: Not found
+    delete:
+      summary: Delete a stock entry (fully consumed)
+      operationId: deleteStockEntry
+      tags:
+        - Stock
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+components:
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    Category:
+      type: string
+      enum:
+        - WATER
+        - CANNED_FOOD
+        - DRY_GOODS
+        - FREEZE_DRIED
+        - MEDICINE
+        - FUEL
+        - OTHER
+    Unit:
+      type: string
+      enum:
+        - LITERS
+        - KG
+        - CANS
+        - PIECES
+        - GRAMS
+    ProductRequest:
+      type: object
+      required:
+        - name
+        - category
+        - unit
+        - targetQuantity
+      properties:
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        unit:
+          $ref: '#/components/schemas/Unit'
+        targetQuantity:
+          type: number
+          format: double
+        notes:
+          type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        unit:
+          $ref: '#/components/schemas/Unit'
+        targetQuantity:
+          type: number
+          format: double
+        currentStock:
+          type: number
+          format: double
+        notes:
+          type: string
+    StockEntryRequest:
+      type: object
+      required:
+        - quantity
+        - purchasedDate
+        - expiryDate
+      properties:
+        quantity:
+          type: number
+          format: double
+        purchasedDate:
+          type: string
+          format: date
+        expiryDate:
+          type: string
+          format: date
+        location:
+          type: string
+        notes:
+          type: string
+    StockEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        quantity:
+          type: number
+          format: double
+        purchasedDate:
+          type: string
+          format: date
+        expiryDate:
+          type: string
+          format: date
+        location:
+          type: string
+        notes:
+          type: string
+    StockEntryPatch:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: number
+          format: double
