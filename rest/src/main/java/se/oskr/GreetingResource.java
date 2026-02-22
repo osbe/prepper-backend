@@ -1,16 +1,17 @@
 package se.oskr;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import se.oskr.api.HelloApi;
+import se.oskr.core.GreetingService;
 
-@Path("/hello")
-public class GreetingResource {
+@ApplicationScoped
+public class GreetingResource implements HelloApi {
 
-  @GET
-  @Produces(MediaType.TEXT_PLAIN)
+  @Inject GreetingService greetingService;
+
+  @Override
   public String hello() {
-    return "Hello from Quarkus REST";
+    return greetingService.greet();
   }
 }

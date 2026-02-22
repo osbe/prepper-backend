@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Prepper Backend API
+  version: 0.1.0
+paths:
+  /hello:
+    get:
+      summary: Returns a greeting message
+      operationId: hello
+      tags:
+        - Hello
+      responses:
+        "200":
+          description: Greeting message
+          content:
+            text/plain:
+              schema:
+                type: string
