@@ -56,7 +56,13 @@ public class StockService {
 
   @Transactional
   public List<StockEntry> listExpiring(int days) {
-    LocalDate cutoff = LocalDate.now().plusDays(days);
-    return StockEntry.list("expiryDate <= ?1 ORDER BY expiryDate ASC", cutoff);
+    LocalDate today = LocalDate.now();
+    LocalDate cutoff = today.plusDays(days);
+    return StockEntry.list("expiryDate >= ?1 AND expiryDate <= ?2 ORDER BY expiryDate ASC", today, cutoff);
+  }
+
+  @Transactional
+  public List<StockEntry> listExpired() {
+    return StockEntry.list("expiryDate < ?1 ORDER BY expiryDate ASC", LocalDate.now());
   }
 }

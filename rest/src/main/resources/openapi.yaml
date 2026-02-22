@@ -133,6 +133,21 @@ paths:
                 $ref: '#/components/schemas/StockEntry'
         "404":
           description: Product not found
+  /stock/expired:
+    get:
+      summary: Get stock entries that have already expired
+      operationId: getExpiredStock
+      tags:
+        - Stock
+      responses:
+        "200":
+          description: Expired stock entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockEntry'
   /stock/expiring:
     get:
       summary: Get stock entries expiring within N days
@@ -218,7 +233,7 @@ components:
       type: string
       enum:
         - WATER
-        - CANNED_FOOD
+        - PRESERVED_FOOD
         - DRY_GOODS
         - FREEZE_DRIED
         - MEDICINE
@@ -313,6 +328,11 @@ components:
           type: string
         notes:
           type: string
+        recommendedAction:
+          type: string
+          description: >
+            Predefined action for this stock entry based on its current expiry status.
+            Populated when the entry is expired or expiring within 30 days; null otherwise.
     StockEntryPatch:
       type: object
       required:

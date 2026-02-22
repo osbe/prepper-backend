@@ -108,6 +108,7 @@ public class ProductResource implements ProductsApi {
     dto.setExpiryDate(e.expiryDate);
     dto.setLocation(e.location);
     dto.setNotes(e.notes);
+    dto.setRecommendedAction(e.product.category.recommendedAction(e.expiryDate));
     return dto;
   }
 }

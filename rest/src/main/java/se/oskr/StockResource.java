@@ -19,6 +19,11 @@ public class StockResource implements StockApi {
   @Inject ProductService productService;
 
   @Override
+  public List<se.oskr.model.StockEntry> getExpiredStock() {
+    return stockService.listExpired().stream().map(this::toStockEntryDto).toList();
+  }
+
+  @Override
   public List<se.oskr.model.StockEntry> getExpiringStock(Integer days) {
     int d = days != null ? days : 30;
     return stockService.listExpiring(d).stream().map(this::toStockEntryDto).toList();
@@ -53,6 +58,7 @@ public class StockResource implements StockApi {
     dto.setExpiryDate(e.expiryDate);
     dto.setLocation(e.location);
     dto.setNotes(e.notes);
+    dto.setRecommendedAction(e.product.category.recommendedAction(e.expiryDate));
     return dto;
   }
 
