@@ -21,9 +21,7 @@ public enum Category {
   FUEL(
       "Use in an equipment or generator test run; refill with fresh stock",
       "Dispose at a hazardous waste facility — do not use in equipment"),
-  OTHER(
-      "Review item condition and plan for rotation",
-      "Assess condition and replace if necessary");
+  OTHER("Review item condition and plan for rotation", "Assess condition and replace if necessary");
 
   private static final int APPROACHING_THRESHOLD_DAYS = 30;
 
@@ -36,8 +34,8 @@ public enum Category {
   }
 
   /**
-   * Returns the recommended action for a stock entry with the given expiry date, or {@code null}
-   * if no action is needed yet.
+   * Returns the recommended action for a stock entry with the given expiry date, or {@code null} if
+   * no action is needed yet.
    */
   public String recommendedAction(LocalDate expiryDate) {
     LocalDate today = LocalDate.now();
