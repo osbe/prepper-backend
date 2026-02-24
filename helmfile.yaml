@@ -7,16 +7,16 @@ helmDefaults:
 
 releases:
   - name: prepper-postgres
-    namespace: prepper
+    namespace: {{ env "NAMESPACE" | default "prepper" }}
     chart: bitnami/postgresql
     version: "~16.0"
     values:
       - deploy/values/postgres.yaml
 
   - name: prepper-backend
-    namespace: prepper
+    namespace: {{ env "NAMESPACE" | default "prepper" }}
     chart: ./app/helm
     needs:
-      - prepper/prepper-postgres
+      - {{ env "NAMESPACE" | default "prepper" }}/prepper-postgres
     values:
       - deploy/values/backend.yaml
