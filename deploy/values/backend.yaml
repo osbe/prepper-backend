@@ -10,3 +10,8 @@ db:
   password: prepper
   name: prepper
   createSecret: true
+
+auth:
+  adminPassword: admin
+  userPassword: user
+  createSecret: true

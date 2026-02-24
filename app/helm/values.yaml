@@ -19,6 +19,11 @@ db:
   password: prepper
   createSecret: true
 
+auth:
+  adminPassword: admin
+  userPassword: user
+  createSecret: true
+
 resources:
   requests:
     cpu: 100m

@@ -26,6 +26,8 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "prepper-backend.fullname" . }}-db-secret
+            - secretRef:
+                name: {{ include "prepper-backend.fullname" . }}-auth-secret
             - configMapRef:
                 name: {{ include "prepper-backend.fullname" . }}-config
           livenessProbe:
