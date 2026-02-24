@@ -9,7 +9,7 @@ releases:
   - name: prepper-postgres
     namespace: {{ env "NAMESPACE" | default "prepper" }}
     chart: bitnami/postgresql
-    version: "~16.0"
+    version: "~18.0"
     values:
       - deploy/values/postgres.yaml
 
