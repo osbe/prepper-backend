@@ -1,0 +1,6 @@
+apiVersion: v2
+name: prepper-backend
+description: Prepper stock management backend
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

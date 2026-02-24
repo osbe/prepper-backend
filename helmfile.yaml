@@ -1,0 +1,22 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+helmDefaults:
+  createNamespace: true
+
+releases:
+  - name: prepper-postgres
+    namespace: prepper
+    chart: bitnami/postgresql
+    version: "~16.0"
+    values:
+      - deploy/values/postgres.yaml
+
+  - name: prepper-backend
+    namespace: prepper
+    chart: ./app/helm
+    needs:
+      - prepper/prepper-postgres
+    values:
+      - deploy/values/backend.yaml

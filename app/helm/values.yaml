@@ -1,0 +1,42 @@
+fullnameOverride: prepper-backend
+
+replicaCount: 1
+
+image:
+  repository: prepper-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+db:
+  host: prepper-postgres-postgresql
+  port: 5432
+  name: prepper
+  user: prepper
+  password: prepper
+  createSecret: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  httpGet:
+    path: /q/health/live
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /q/health/ready
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 5

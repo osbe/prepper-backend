@@ -1,0 +1,12 @@
+# Override image for local cluster (minikube image load / kind load)
+image:
+  repository: prepper-backend
+  tag: latest
+  pullPolicy: Never   # use locally loaded image, don't pull from registry
+
+db:
+  host: prepper-postgres-postgresql
+  user: prepper
+  password: prepper
+  name: prepper
+  createSecret: true

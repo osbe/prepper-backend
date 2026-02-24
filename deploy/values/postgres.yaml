@@ -1,0 +1,8 @@
+auth:
+  username: prepper
+  password: prepper
+  database: prepper
+primary:
+  persistence:
+    enabled: true
+    size: 1Gi
