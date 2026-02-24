@@ -1,6 +1,6 @@
 auth:
-  username: prepper
-  password: prepper
+  username: CHANGEME
+  password: CHANGEME
   database: prepper
 primary:
   persistence:

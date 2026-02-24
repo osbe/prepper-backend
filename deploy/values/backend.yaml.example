@@ -6,12 +6,12 @@ image:
 
 db:
   host: prepper-postgres-postgresql
-  user: prepper
-  password: prepper
+  user: CHANGEME
+  password: CHANGEME
   name: prepper
   createSecret: true
 
 auth:
-  adminPassword: admin
-  userPassword: user
+  adminPassword: CHANGEME
+  userPassword: CHANGEME
   createSecret: true

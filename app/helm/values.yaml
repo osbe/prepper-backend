@@ -15,13 +15,13 @@ db:
   host: prepper-postgres-postgresql
   port: 5432
   name: prepper
-  user: prepper
-  password: prepper
+  user: CHANGEME
+  password: CHANGEME
   createSecret: true
 
 auth:
-  adminPassword: admin
-  userPassword: user
+  adminPassword: CHANGEME
+  userPassword: CHANGEME
   createSecret: true
 
 resources:

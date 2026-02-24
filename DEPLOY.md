@@ -72,7 +72,7 @@ Then:
 curl http://localhost:8080/q/health
 
 # API (HTTP Basic Auth)
-curl -u admin:admin http://localhost:8080/products
+curl -u <username>:<password> http://localhost:8080/products
 ```
 
 ## 5 — Teardown
@@ -91,12 +91,14 @@ kubectl delete namespace prepper
 
 ## Configuration reference
 
-| Variable | Default | Description |
-|---|---|---|
-| `DB_USER` | `postgres` | Database username |
-| `DB_PASSWORD` | `postgres` | Database password |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/prepper` | JDBC connection URL |
-| `DB_SCHEMA_GENERATION` | `update` | Hibernate schema strategy in prod (`update` / `validate` / `none`) |
+| Variable | Description |
+|---|---|
+| `DB_USER` | Database username |
+| `DB_PASSWORD` | Database password |
+| `DB_URL` | JDBC connection URL (e.g. `jdbc:postgresql://localhost:5432/prepper`) |
+| `DB_SCHEMA_GENERATION` | Hibernate schema strategy in prod (`update` / `validate` / `none`), defaults to `update` |
+| `APP_ADMIN_PASSWORD` | Password for the seeded admin user |
+| `APP_USER_PASSWORD` | Password for the seeded regular user |
 
 These are injected automatically from the Helm Secret and ConfigMap. To change them, edit `deploy/values/backend.yaml` (credentials) or `deploy/values/postgres.yaml` (database setup) and re-run `helmfile sync`.
 
