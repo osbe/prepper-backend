@@ -3,8 +3,8 @@ fullnameOverride: prepper-backend
 replicaCount: 1
 
 image:
-  repository: prepper-backend
-  tag: latest
+  repository: ghcr.io/osbe/prepper-backend
+  tag: ""
   pullPolicy: IfNotPresent
 
 service:
