@@ -8,7 +8,6 @@ if [[ ! "$BUMP" =~ ^(patch|minor|major)$ ]]; then
 fi
 
 CHART="app/helm/Chart.yaml"
-POM="pom.xml"
 
 CURRENT=$(grep '^version:' "$CHART" | awk '{print $2}')
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
@@ -23,11 +22,13 @@ NEW="$MAJOR.$MINOR.$PATCH"
 
 sed -i "s/^version: .*/version: $NEW/" "$CHART"
 sed -i "s/^appVersion: .*/appVersion: \"$NEW\"/" "$CHART"
-sed -i "s|<version>$CURRENT</version>|<version>$NEW</version>|" "$POM"
+for POM in pom.xml core/pom.xml rest/pom.xml app/pom.xml; do
+  sed -i "s|<version>$CURRENT</version>|<version>$NEW</version>|g" "$POM"
+done
 
 echo "Bumped $CURRENT → $NEW"
 
-git add "$CHART" "$POM"
+git add "$CHART" pom.xml core/pom.xml rest/pom.xml app/pom.xml
 git commit -m "release v$NEW"
 git tag "v$NEW"
 git push
