@@ -13,13 +13,14 @@ public class StockService {
 
   @Transactional
   public List<StockEntry> listForProduct(long productId) {
-    return StockEntry.list("product.id = ?1 ORDER BY expiryDate ASC", productId);
+    return StockEntry.list("product.id = ?1 ORDER BY expiryDate ASC NULLS LAST", productId);
   }
 
   @Transactional
   public Optional<StockEntry> create(
       long productId,
       double quantity,
+      String subType,
       LocalDate purchasedDate,
       LocalDate expiryDate,
       String location,
@@ -30,6 +31,7 @@ public class StockService {
               StockEntry entry = new StockEntry();
               entry.product = product;
               entry.quantity = quantity;
+              entry.subType = subType;
               entry.purchasedDate = purchasedDate;
               entry.expiryDate = expiryDate;
               entry.location = location;

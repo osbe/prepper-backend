@@ -290,12 +290,13 @@ components:
       type: object
       required:
         - quantity
-        - purchasedDate
-        - expiryDate
       properties:
         quantity:
           type: number
           format: double
+        subType:
+          type: string
+          description: Variant or sub-type of the product (e.g. "Spaghetti" for a Pasta product)
         purchasedDate:
           type: string
           format: date
@@ -318,6 +319,9 @@ components:
         quantity:
           type: number
           format: double
+        subType:
+          type: string
+          description: Variant or sub-type of the product (e.g. "Spaghetti" for a Pasta product)
         purchasedDate:
           type: string
           format: date

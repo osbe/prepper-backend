@@ -38,6 +38,9 @@ public enum Category {
    * no action is needed yet.
    */
   public String recommendedAction(LocalDate expiryDate) {
+    if (expiryDate == null) {
+      return null;
+    }
     LocalDate today = LocalDate.now();
     if (expiryDate.isBefore(today)) {
       return expiredAction;

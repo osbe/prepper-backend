@@ -16,10 +16,10 @@ public class StockEntry extends PanacheEntity {
   @Column(nullable = false)
   public double quantity;
 
-  @Column(nullable = false)
+  public String subType;
+
   public LocalDate purchasedDate;
 
-  @Column(nullable = false)
   public LocalDate expiryDate;
 
   public String location;

@@ -87,6 +87,7 @@ public class ProductResource implements ProductsApi {
         .create(
             id,
             body.getQuantity(),
+            body.getSubType(),
             body.getPurchasedDate(),
             body.getExpiryDate(),
             body.getLocation(),
@@ -112,6 +113,7 @@ public class ProductResource implements ProductsApi {
     dto.setId(e.id);
     dto.setProductId(e.product.id);
     dto.setQuantity(e.quantity);
+    dto.setSubType(e.subType);
     dto.setPurchasedDate(e.purchasedDate);
     dto.setExpiryDate(e.expiryDate);
     dto.setLocation(e.location);

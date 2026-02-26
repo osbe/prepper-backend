@@ -60,6 +60,7 @@ public class StockResource implements StockApi {
     dto.setId(e.id);
     dto.setProductId(e.product.id);
     dto.setQuantity(e.quantity);
+    dto.setSubType(e.subType);
     dto.setPurchasedDate(e.purchasedDate);
     dto.setExpiryDate(e.expiryDate);
     dto.setLocation(e.location);
