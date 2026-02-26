@@ -14,8 +14,8 @@ public enum Category {
   private static final int APPROACHING_THRESHOLD_DAYS = 30;
 
   /**
-   * Returns {@code "EXPIRED"}, {@code "APPROACHING"}, or {@code null} based on the expiry date.
-   * The frontend uses this key together with the category for i18n lookups.
+   * Returns {@code "EXPIRED"}, {@code "APPROACHING"}, or {@code null} based on the expiry date. The
+   * frontend uses this key together with the category for i18n lookups.
    */
   public String expiryStatus(LocalDate expiryDate) {
     if (expiryDate == null) {
