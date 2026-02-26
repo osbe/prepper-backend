@@ -229,6 +229,11 @@ components:
         type: integer
         format: int64
   schemas:
+    ExpiryStatus:
+      type: string
+      enum:
+        - APPROACHING
+        - EXPIRED
     Category:
       type: string
       enum:
@@ -332,11 +337,12 @@ components:
           type: string
         notes:
           type: string
-        recommendedAction:
-          type: string
+        expiryStatus:
+          $ref: '#/components/schemas/ExpiryStatus'
           description: >
-            Predefined action for this stock entry based on its current expiry status.
-            Populated when the entry is expired or expiring within 30 days; null otherwise.
+            Expiry status for this stock entry. Populated when the entry is expired or
+            expiring within 30 days; null otherwise. Use with the product category as an
+            i18n key (e.g. "action.WATER.APPROACHING").
     StockEntryPatch:
       type: object
       required:

@@ -65,7 +65,8 @@ public class StockResource implements StockApi {
     dto.setExpiryDate(e.expiryDate);
     dto.setLocation(e.location);
     dto.setNotes(e.notes);
-    dto.setRecommendedAction(e.product.category.recommendedAction(e.expiryDate));
+    String status = e.product.category.expiryStatus(e.expiryDate);
+    dto.setExpiryStatus(status != null ? se.oskr.model.ExpiryStatus.fromValue(status) : null);
     return dto;
   }
 
