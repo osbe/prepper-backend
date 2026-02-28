@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CHART="app/helm/Chart.yaml"
+
+case $1 in
+  get-version)
+    grep '^version:' "$CHART" | awk '{print $2}'
+    ;;
+  update)
+    CURRENT=$2; NEW=$3
+    sed -i "s/^version: .*/version: $NEW/" "$CHART"
+    sed -i "s/^appVersion: .*/appVersion: \"$NEW\"/" "$CHART"
+    for POM in pom.xml core/pom.xml rest/pom.xml app/pom.xml; do
+      sed -i "s|<version>$CURRENT</version>|<version>$NEW</version>|g" "$POM"
+    done
+    ;;
+  stage)
+    git add "$CHART" pom.xml core/pom.xml rest/pom.xml app/pom.xml
+    ;;
+esac
