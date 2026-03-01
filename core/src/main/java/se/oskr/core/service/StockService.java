@@ -52,6 +52,28 @@ public class StockService {
   }
 
   @Transactional
+  public Optional<StockEntry> update(
+      long id,
+      double quantity,
+      String subType,
+      LocalDate purchasedDate,
+      LocalDate expiryDate,
+      String location,
+      String notes) {
+    return StockEntry.<StockEntry>findByIdOptional(id)
+        .map(
+            entry -> {
+              entry.quantity = quantity;
+              entry.subType = subType;
+              entry.purchasedDate = purchasedDate;
+              entry.expiryDate = expiryDate;
+              entry.location = location;
+              entry.notes = notes;
+              return entry;
+            });
+  }
+
+  @Transactional
   public boolean delete(long id) {
     return StockEntry.deleteById(id);
   }

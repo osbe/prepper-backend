@@ -3,7 +3,13 @@ package se.oskr;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import se.oskr.api.StockApi;
 import se.oskr.core.domain.Product;
@@ -11,6 +17,7 @@ import se.oskr.core.domain.StockEntry;
 import se.oskr.core.service.ProductService;
 import se.oskr.core.service.StockService;
 import se.oskr.model.StockEntryPatch;
+import se.oskr.model.StockEntryRequest;
 
 @ApplicationScoped
 public class StockResource implements StockApi {
@@ -43,6 +50,26 @@ public class StockResource implements StockApi {
   public se.oskr.model.StockEntry updateStockEntry(Long id, StockEntryPatch body) {
     return stockService
         .updateQuantity(id, body.getQuantity())
+        .map(this::toStockEntryDto)
+        .orElseThrow(NotFoundException::new);
+  }
+
+  @PUT
+  @Path("/{id}")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @RolesAllowed("admin")
+  public se.oskr.model.StockEntry replaceStockEntry(
+      @PathParam("id") Long id, StockEntryRequest body) {
+    return stockService
+        .update(
+            id,
+            body.getQuantity(),
+            body.getSubType(),
+            body.getPurchasedDate(),
+            body.getExpiryDate(),
+            body.getLocation(),
+            body.getNotes())
         .map(this::toStockEntryDto)
         .orElseThrow(NotFoundException::new);
   }

@@ -185,6 +185,28 @@ paths:
                 items:
                   $ref: '#/components/schemas/Product'
   /stock/{id}:
+    put:
+      summary: Update all fields of a stock entry
+      operationId: replaceStockEntry
+      tags:
+        - Stock
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockEntryRequest'
+      responses:
+        "200":
+          description: Updated stock entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockEntry'
+        "404":
+          description: Not found
     patch:
       summary: Update remaining quantity of a stock entry
       operationId: updateStockEntry
