@@ -265,6 +265,7 @@ components:
         - FREEZE_DRIED
         - MEDICINE
         - FUEL
+        - STAPLES
         - OTHER
     Unit:
       type: string

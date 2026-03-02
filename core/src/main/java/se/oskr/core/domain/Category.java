@@ -9,6 +9,7 @@ public enum Category {
   FREEZE_DRIED,
   MEDICINE,
   FUEL,
+  STAPLES,
   OTHER;
 
   private static final int APPROACHING_THRESHOLD_DAYS = 30;
