@@ -1,19 +1,21 @@
-# Deploying prepper-backend to Kubernetes
+# Deploying prepper-backend
 
-Deploys two Helm releases into the `prepper` namespace:
+There are two ways to deploy:
 
-- **prepper-postgres** — Bitnami PostgreSQL chart
-- **prepper-backend** — custom chart in `app/helm/`
+- **From source** — build the image locally and deploy using the chart bundled in this repo. Intended for local development.
+- **Published chart** — use the pre-built chart published to `oci://ghcr.io/osbe/charts`. Intended for any real cluster.
 
-## Prerequisites
+---
+
+## From source (local development)
+
+### Prerequisites
 
 - [Helm](https://helm.sh/docs/intro/install/) ≥ 3
 - [Helmfile](https://helmfile.readthedocs.io/en/latest/#installation)
 - A local cluster: [minikube](https://minikube.sigs.k8s.io/docs/start/) or [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
 
-## 1 — Build the JAR
-
-Run from the repo root:
+### 1 — Build the JAR
 
 ```bash
 ./mvnw package -pl app -am -DskipTests
@@ -21,9 +23,7 @@ Run from the repo root:
 
 Output lands in `app/target/quarkus-app/`.
 
-## 2 — Build the Docker image
-
-The build context is the `app/` directory (the Dockerfile copies from `target/quarkus-app/`).
+### 2 — Build the Docker image
 
 **minikube** — build directly inside minikube's Docker daemon so the image is available without pushing to a registry:
 
@@ -39,15 +39,14 @@ docker build -f app/src/main/docker/Dockerfile.jvm -t prepper-backend:latest app
 kind load docker-image prepper-backend:latest
 ```
 
-> For kind, also change `pullPolicy` in `deploy/values/backend.yaml` from `Never` to `IfNotPresent`.
 
-## 3 — Deploy
+### 3 — Deploy
 
 ```bash
 helmfile sync
 ```
 
-This adds the Bitnami Helm repo if missing, installs PostgreSQL first, then the backend once Postgres is ready.
+This installs PostgreSQL first, then the backend once Postgres is ready. Both land in the `prepper` namespace.
 
 Check pod status:
 
@@ -57,7 +56,7 @@ kubectl get pods -n prepper
 
 Both pods should reach `Running` within a minute or two.
 
-## 4 — Verify
+### 4 — Verify
 
 Forward the service port locally:
 
@@ -75,7 +74,7 @@ curl http://localhost:8080/q/health
 curl -u <username>:<password> http://localhost:8080/products
 ```
 
-## 5 — Teardown
+### 5 — Teardown
 
 ```bash
 helmfile destroy
@@ -89,33 +88,68 @@ kubectl delete namespace prepper
 
 ---
 
+## Published chart
+
+Charts are published to `oci://ghcr.io/osbe/charts` on every release. You need [Helm](https://helm.sh/docs/intro/install/) ≥ 3 and a running PostgreSQL instance, or you can deploy the Bitnami PostgreSQL chart alongside it.
+
+### Vanilla Helm
+
+```bash
+helm install prepper-backend oci://ghcr.io/osbe/charts/prepper-backend \
+  --namespace <namespace> \
+  --set db.host=<postgres-host> \
+  --set db.password=<db-password> \
+  --set auth.adminPassword=<admin-password> \
+  --set auth.userPassword=<user-password>
+```
+
+### FluxCD — using `valuesFrom`
+
+If managing the release via a FluxCD `HelmRelease` with `valuesFrom`, create the following secrets in the target namespace before reconciling.
+
+**`prepper-postgres-credentials`**
+```bash
+kubectl create secret generic prepper-postgres-credentials \
+  -n <namespace> \
+  --from-literal=password=<db-password> \
+  --from-literal=postgresPassword=<postgres-superuser-password>
+```
+
+**`prepper-backend-credentials`**
+```bash
+kubectl create secret generic prepper-backend-credentials \
+  -n <namespace> \
+  --from-literal=dbPassword=<db-password> \
+  --from-literal=adminPassword=<admin-password> \
+  --from-literal=userPassword=<user-password>
+```
+
+> `dbPassword` must match `password` in `prepper-postgres-credentials`.
+
+---
+
 ## Configuration reference
 
-| Variable | Description |
+| Helm value | Description |
 |---|---|
-| `DB_USER` | Database username |
-| `DB_PASSWORD` | Database password |
-| `DB_URL` | JDBC connection URL (e.g. `jdbc:postgresql://localhost:5432/prepper`) |
-| `DB_SCHEMA_GENERATION` | Hibernate schema strategy in prod (`update` / `validate` / `none`), defaults to `update` |
-| `APP_ADMIN_PASSWORD` | Password for the seeded admin user |
-| `APP_USER_PASSWORD` | Password for the seeded regular user |
+| `db.host` | PostgreSQL hostname |
+| `db.user` | Database username |
+| `db.password` | Database password |
+| `db.name` | Database name |
+| `auth.adminPassword` | Password for the seeded admin user |
+| `auth.userPassword` | Password for the seeded regular user |
 
-These are injected automatically from the Helm Secret and ConfigMap. To change them, edit `deploy/values/backend.yaml` (credentials) or `deploy/values/postgres.yaml` (database setup) and re-run `helmfile sync`.
+The chart creates a Kubernetes Secret from these values when `db.createSecret: true` and `auth.createSecret: true` (both default to `true`).
 
-## Helm chart structure
+## Chart structure
 
 ```
 app/helm/
   Chart.yaml
-  values.yaml                  ← defaults (fullnameOverride: prepper-backend)
+  values.yaml                  ← defaults
   templates/
     deployment.yaml            ← liveness/readiness probes on /q/health/live and /q/health/ready
     service.yaml               ← ClusterIP on port 8080
-    secret.yaml                ← DB_USER / DB_PASSWORD (rendered when db.createSecret: true)
+    secret.yaml                ← DB credentials (rendered when db.createSecret: true)
     configmap.yaml             ← DB_URL, QUARKUS_HTTP_AUTH_BASIC
-deploy/
-  values/
-    postgres.yaml              ← Bitnami PostgreSQL overrides
-    backend.yaml               ← local cluster image + DB connection overrides
-helmfile.yaml
 ```
