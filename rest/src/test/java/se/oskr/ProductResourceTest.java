@@ -284,7 +284,9 @@ class ProductResourceTest {
         .auth()
         .basic("admin", "admin")
         .contentType(ContentType.JSON)
-        .body(String.format("{\"quantity\": 5, \"expiryDate\": \"%s\"}", LocalDate.now().plusYears(1)))
+        .body(
+            String.format(
+                "{\"quantity\": 5, \"expiryDate\": \"%s\"}", LocalDate.now().plusYears(1)))
         .when()
         .post("/products/99999/stock")
         .then()
