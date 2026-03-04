@@ -49,10 +49,8 @@ class StockResourceTest {
   }
 
   private long createStockEntry(long productId, double qty, String expiryDate) {
-    String body =
-        expiryDate != null
-            ? String.format("{\"quantity\": %s, \"expiryDate\": \"%s\"}", qty, expiryDate)
-            : String.format("{\"quantity\": %s}", qty);
+    String date = expiryDate != null ? expiryDate : LocalDate.now().plusYears(2).toString();
+    String body = String.format("{\"quantity\": %s, \"expiryDate\": \"%s\"}", qty, date);
     return given()
         .auth()
         .basic("admin", "admin")

@@ -49,10 +49,8 @@ class ProductResourceTest {
   }
 
   private long createStockEntry(long productId, double qty, String expiryDate) {
-    String body =
-        expiryDate != null
-            ? String.format("{\"quantity\": %s, \"expiryDate\": \"%s\"}", qty, expiryDate)
-            : String.format("{\"quantity\": %s}", qty);
+    String date = expiryDate != null ? expiryDate : LocalDate.now().plusYears(2).toString();
+    String body = String.format("{\"quantity\": %s, \"expiryDate\": \"%s\"}", qty, date);
     return given()
         .auth()
         .basic("admin", "admin")
@@ -263,7 +261,7 @@ class ProductResourceTest {
   }
 
   @Test
-  void createStockEntryMinimalFields() {
+  void createStockEntryWithoutExpiryDateReturns400() {
     long productId = createProduct("Salt", "DRY_GOODS", "KG", 5);
 
     given()
@@ -277,14 +275,7 @@ class ProductResourceTest {
         .when()
         .post("/products/{id}/stock", productId)
         .then()
-        .statusCode(200)
-        .body("quantity", is(2.0f))
-        .body("subType", nullValue())
-        .body("purchasedDate", nullValue())
-        .body("expiryDate", nullValue())
-        .body("location", nullValue())
-        .body("notes", nullValue())
-        .body("expiryStatus", nullValue());
+        .statusCode(400);
   }
 
   @Test
@@ -293,10 +284,7 @@ class ProductResourceTest {
         .auth()
         .basic("admin", "admin")
         .contentType(ContentType.JSON)
-        .body(
-            """
-            {"quantity": 5}
-            """)
+        .body(String.format("{\"quantity\": 5, \"expiryDate\": \"%s\"}", LocalDate.now().plusYears(1)))
         .when()
         .post("/products/99999/stock")
         .then()
@@ -307,9 +295,10 @@ class ProductResourceTest {
   void stockOrderedByExpiryDate() {
     long productId = createProduct("Fuel Can", "FUEL", "LITERS", 50);
     String earlyDate = LocalDate.now().plusDays(5).toString();
+    String midDate = LocalDate.now().plusDays(30).toString();
     String lateDate = LocalDate.now().plusDays(60).toString();
     createStockEntry(productId, 10, lateDate);
-    createStockEntry(productId, 10, null);
+    createStockEntry(productId, 10, midDate);
     createStockEntry(productId, 10, earlyDate);
 
     given()
@@ -321,8 +310,8 @@ class ProductResourceTest {
         .statusCode(200)
         .body("$", hasSize(3))
         .body("[0].expiryDate", is(earlyDate))
-        .body("[1].expiryDate", is(lateDate))
-        .body("[2].expiryDate", nullValue());
+        .body("[1].expiryDate", is(midDate))
+        .body("[2].expiryDate", is(lateDate));
   }
 
   @Test
@@ -349,5 +338,21 @@ class ProductResourceTest {
   @Test
   void unauthenticatedIsRejected() {
     given().when().get("/products").then().statusCode(401);
+  }
+
+  @Test
+  void createProductWithInvalidCategoryReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"name": "X", "category": "INVALID_CATEGORY", "unit": "LITERS", "targetQuantity": 1}
+            """)
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
   }
 }

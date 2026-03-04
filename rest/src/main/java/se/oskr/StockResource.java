@@ -4,6 +4,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -61,6 +62,9 @@ public class StockResource implements StockApi {
   @RolesAllowed("admin")
   public se.oskr.model.StockEntry replaceStockEntry(
       @PathParam("id") Long id, StockEntryRequest body) {
+    if (body.getExpiryDate() == null) {
+      throw new BadRequestException("expiryDate is required");
+    }
     return stockService
         .update(
             id,

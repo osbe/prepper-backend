@@ -318,6 +318,7 @@ components:
       type: object
       required:
         - quantity
+        - expiryDate
       properties:
         quantity:
           type: number
