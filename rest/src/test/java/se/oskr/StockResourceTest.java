@@ -172,7 +172,7 @@ class StockResourceTest {
   @Test
   void getLowStockReturnsProductBelowTarget() {
     long productId = createProduct("Freeze Dried Meals", "FREEZE_DRIED", "PIECES", 10);
-    createStockEntry(productId, 3, null);
+    createStockEntry(productId, 2, null);
 
     given()
         .auth()
@@ -182,14 +182,29 @@ class StockResourceTest {
         .then()
         .statusCode(200)
         .body("$", hasSize(1))
-        .body("[0].currentStock", is(3.0f))
+        .body("[0].currentStock", is(2.0f))
         .body("[0].targetQuantity", is(10.0f));
   }
 
   @Test
-  void getLowStockExcludesProductMeetingTarget() {
+  void getLowStockExcludesProductAtQuarterTarget() {
     long productId = createProduct("Salt", "DRY_GOODS", "KG", 10);
-    createStockEntry(productId, 10, null);
+    createStockEntry(productId, 3, null);
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .when()
+        .get("/stock/low")
+        .then()
+        .statusCode(200)
+        .body("$", hasSize(0));
+  }
+
+  @Test
+  void getLowStockExcludesProductAboveQuarterTarget() {
+    long productId = createProduct("Salt", "DRY_GOODS", "KG", 10);
+    createStockEntry(productId, 7, null);
 
     given()
         .auth()

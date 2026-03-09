@@ -171,7 +171,7 @@ paths:
                   $ref: '#/components/schemas/StockEntry'
   /stock/low:
     get:
-      summary: Get products where current stock is below target quantity
+      summary: Get products where current stock is below a quarter of target quantity
       operationId: getLowStock
       tags:
         - Stock

@@ -73,7 +73,7 @@ public class ProductService {
   @Transactional
   public List<Product> listLowStock() {
     return Product.<Product>listAll().stream()
-        .filter(p -> currentStock(p.id) < p.targetQuantity)
+        .filter(p -> currentStock(p.id) < p.targetQuantity / 4.0)
         .toList();
   }
 }
