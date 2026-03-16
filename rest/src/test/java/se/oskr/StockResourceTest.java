@@ -233,6 +233,28 @@ class StockResourceTest {
   }
 
   @Test
+  void getLowStockIsSortedByStockRatioAscending() {
+    long productA = createProduct("Product A", "DRY_GOODS", "KG", 100);
+    long productB = createProduct("Product B", "DRY_GOODS", "KG", 100);
+    long productC = createProduct("Product C", "DRY_GOODS", "KG", 100);
+    createStockEntry(productA, 20, null); // 20% of target
+    createStockEntry(productB, 10, null); // 10% of target
+    // productC has 0 stock — 0% of target
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .when()
+        .get("/stock/low")
+        .then()
+        .statusCode(200)
+        .body("$", hasSize(3))
+        .body("[0].currentStock", is(0.0f))
+        .body("[1].currentStock", is(10.0f))
+        .body("[2].currentStock", is(20.0f));
+  }
+
+  @Test
   void updateStockEntryQuantity() {
     long productId = createProduct("Beans", "PRESERVED_FOOD", "CANS", 24);
     long entryId = createStockEntry(productId, 5, null);

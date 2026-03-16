@@ -2,6 +2,7 @@ package se.oskr.core.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import se.oskr.core.domain.Category;
@@ -74,6 +75,7 @@ public class ProductService {
   public List<Product> listLowStock() {
     return Product.<Product>listAll().stream()
         .filter(p -> currentStock(p.id) < p.targetQuantity / 4.0)
+        .sorted(Comparator.comparingDouble(p -> currentStock(p.id) / p.targetQuantity))
         .toList();
   }
 }
