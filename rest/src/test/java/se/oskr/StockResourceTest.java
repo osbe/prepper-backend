@@ -373,4 +373,96 @@ class StockResourceTest {
         .body("$", hasSize(1))
         .body("[0].expiryStatus", nullValue());
   }
+
+  @Test
+  void replaceStockEntry() {
+    long productId = createProduct("Rice", "DRY_GOODS", "KG", 20);
+    long entryId = createStockEntry(productId, 5, null);
+    String expiry = LocalDate.now().plusYears(3).toString();
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            String.format(
+                "{\"quantity\": 8, \"subType\": \"Basmati\", \"expiryDate\": \"%s\","
+                    + " \"location\": \"Pantry\"}",
+                expiry))
+        .when()
+        .put("/stock/{id}", entryId)
+        .then()
+        .statusCode(200)
+        .body("quantity", is(8.0f))
+        .body("subType", is("Basmati"))
+        .body("location", is("Pantry"))
+        .body("expiryDate", is(expiry));
+  }
+
+  @Test
+  void replaceStockEntryWithoutExpiryDateReturns400() {
+    long productId = createProduct("Rice", "DRY_GOODS", "KG", 20);
+    long entryId = createStockEntry(productId, 5, null);
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"quantity": 8}
+            """)
+        .when()
+        .put("/stock/{id}", entryId)
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void replaceNonExistentStockEntryReturns404() {
+    String expiry = LocalDate.now().plusYears(3).toString();
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(String.format("{\"quantity\": 8, \"expiryDate\": \"%s\"}", expiry))
+        .when()
+        .put("/stock/99999")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  void userCannotReplaceStock() {
+    long productId = createProduct("Rice", "DRY_GOODS", "KG", 20);
+    long entryId = createStockEntry(productId, 5, null);
+    String expiry = LocalDate.now().plusYears(3).toString();
+
+    given()
+        .auth()
+        .basic("user", "user")
+        .contentType(ContentType.JSON)
+        .body(String.format("{\"quantity\": 8, \"expiryDate\": \"%s\"}", expiry))
+        .when()
+        .put("/stock/{id}", entryId)
+        .then()
+        .statusCode(403);
+  }
+
+  @Test
+  void patchStockEntryWithoutQuantityReturns400() {
+    long productId = createProduct("Rice", "DRY_GOODS", "KG", 20);
+    long entryId = createStockEntry(productId, 5, null);
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body("{}")
+        .when()
+        .patch("/stock/{id}", entryId)
+        .then()
+        .statusCode(400);
+  }
 }

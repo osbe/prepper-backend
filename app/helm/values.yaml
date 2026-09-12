@@ -18,6 +18,8 @@ db:
   user: CHANGEME
   password: CHANGEME
   createSecret: true
+  # Hibernate schema mode: update (default), validate, none, drop-and-create
+  schemaGeneration: update
 
 auth:
   adminPassword: CHANGEME

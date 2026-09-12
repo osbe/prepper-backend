@@ -31,6 +31,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
@@ -68,7 +72,7 @@
                                 <returnResponse>false</returnResponse>
                                 <useJakartaEe>true</useJakartaEe>
                                 <sourceFolder>.</sourceFolder>
-                                <useBeanValidation>false</useBeanValidation>
+                                <useBeanValidation>true</useBeanValidation>
                                 <useSwaggerAnnotations>false</useSwaggerAnnotations>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>

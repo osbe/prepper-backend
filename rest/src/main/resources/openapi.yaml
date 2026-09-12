@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: Prepper Backend API
-  version: 0.1.0
+  version: 0.10.0
+security:
+  - basicAuth: []
+
 paths:
   /products:
     get:
@@ -23,6 +26,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Product'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     post:
       summary: Create a product
       operationId: createProduct
@@ -41,6 +48,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /products/{id}:
     get:
       summary: Get a product with current stock
@@ -58,6 +71,10 @@ paths:
                 $ref: '#/components/schemas/Product'
         "404":
           description: Not found
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     put:
       summary: Update a product
       operationId: updateProduct
@@ -80,6 +97,12 @@ paths:
                 $ref: '#/components/schemas/Product'
         "404":
           description: Not found
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     delete:
       summary: Delete a product and all its stock entries
       operationId: deleteProduct
@@ -92,6 +115,10 @@ paths:
           description: Deleted
         "404":
           description: Not found
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /products/{id}/stock:
     get:
       summary: List stock entries for a product, ordered by expiry date (oldest first)
@@ -111,6 +138,10 @@ paths:
                   $ref: '#/components/schemas/StockEntry'
         "404":
           description: Product not found
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     post:
       summary: Add a stock entry for a product
       operationId: createStockEntry
@@ -133,9 +164,15 @@ paths:
                 $ref: '#/components/schemas/StockEntry'
         "404":
           description: Product not found
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /stock/expired:
     get:
-      summary: Get stock entries that have already expired
+      summary: Get stock entries that have already expired, oldest expiry first
       operationId: getExpiredStock
       tags:
         - Stock
@@ -148,9 +185,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StockEntry'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /stock/expiring:
     get:
-      summary: Get stock entries expiring within N days
+      summary: Get stock entries expiring within N days, oldest expiry first
       operationId: getExpiringStock
       tags:
         - Stock
@@ -169,9 +210,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StockEntry'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /stock/low:
     get:
-      summary: Get products where current stock is below a quarter of target quantity
+      summary: Get products where current stock is below a quarter of target quantity, emptiest first
+      description: >
+        Sorted by fill ratio (current stock / target quantity), emptiest first. A product
+        with a target quantity of 0 is never reported as low, even with no stock at all.
       operationId: getLowStock
       tags:
         - Stock
@@ -184,6 +232,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Product'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /stock/{id}:
     put:
       summary: Update all fields of a stock entry
@@ -207,6 +259,12 @@ paths:
                 $ref: '#/components/schemas/StockEntry'
         "404":
           description: Not found
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     patch:
       summary: Update remaining quantity of a stock entry
       operationId: updateStockEntry
@@ -229,6 +287,12 @@ paths:
                 $ref: '#/components/schemas/StockEntry'
         "404":
           description: Not found
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
     delete:
       summary: Delete a stock entry (fully consumed)
       operationId: deleteStockEntry
@@ -241,7 +305,31 @@ paths:
           description: Deleted
         "404":
           description: Not found
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >
+        HTTP Basic Auth against users stored in the database. Role `user` may call the
+        read-only GET endpoints; role `admin` may call everything, including all writes.
+  responses:
+    BadRequest:
+      description: >
+        The request body is invalid. A missing required field yields a JSON body
+        `{"title": "Constraint Violation", "status": 400, "violations": [{"field": ..., "message": ...}]}`.
+        A value that is not accepted — e.g. an unknown category or unit — yields a
+        plain-text message instead.
+    Unauthorized:
+      description: Missing or invalid HTTP Basic credentials.
+    Forbidden:
+      description: >
+        Authenticated, but the user lacks the role this operation requires. Writes
+        require the `admin` role.
   parameters:
     id:
       name: id

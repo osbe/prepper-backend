@@ -3,7 +3,6 @@ package se.oskr;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import se.oskr.api.ProductsApi;
@@ -84,9 +83,6 @@ public class ProductResource implements ProductsApi {
   @Override
   @RolesAllowed("admin")
   public se.oskr.model.StockEntry createStockEntry(Long id, StockEntryRequest body) {
-    if (body.getExpiryDate() == null) {
-      throw new BadRequestException("expiryDate is required");
-    }
     return stockService
         .create(
             id,

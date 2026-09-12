@@ -1,9 +1,10 @@
 # Deploying prepper-backend
 
-There are two ways to deploy:
+There are three ways to deploy:
 
-- **From source** — build the image locally and deploy using the chart bundled in this repo. Intended for local development.
-- **Published chart** — use the pre-built chart published to `oci://ghcr.io/osbe/charts`. Intended for any real cluster.
+- **From source** — build the image locally and install the chart bundled in this repo with plain Helm. Intended for local development against a throwaway cluster.
+- **Published chart** — install the pre-built chart from `oci://ghcr.io/osbe/charts`. Intended for any real cluster.
+- **Full stack** — the `prepper-infra` repo deploys backend, frontend, and PostgreSQL together with Helmfile. That is the supported path for the production cluster; the two options below deploy the backend alone.
 
 ---
 
@@ -12,7 +13,6 @@ There are two ways to deploy:
 ### Prerequisites
 
 - [Helm](https://helm.sh/docs/intro/install/) ≥ 3
-- [Helmfile](https://helmfile.readthedocs.io/en/latest/#installation)
 - A local cluster: [minikube](https://minikube.sigs.k8s.io/docs/start/) or [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
 
 ### 1 — Build the JAR
@@ -39,14 +39,41 @@ docker build -f app/src/main/docker/Dockerfile.jvm -t prepper-backend:latest app
 kind load docker-image prepper-backend:latest
 ```
 
+### 3 — Install PostgreSQL
 
-### 3 — Deploy
+The chart does not bundle a database. Install one into the same namespace:
 
 ```bash
-helmfile sync
+helm install prepper-postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+  --namespace prepper --create-namespace \
+  --set auth.username=prepper \
+  --set auth.password=prepper \
+  --set auth.database=prepper
 ```
 
-This installs PostgreSQL first, then the backend once Postgres is ready. Both land in the `prepper` namespace.
+> The release name matters: `db.host` defaults to `prepper-postgres-postgresql`, which is the Service this release creates. Use a different release name and you must set `db.host` to match in the next step.
+
+Wait for it to be ready before continuing:
+
+```bash
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql -n prepper --timeout=120s
+```
+
+### 4 — Deploy the backend
+
+```bash
+helm install prepper-backend ./app/helm \
+  --namespace prepper \
+  --set image.repository=prepper-backend \
+  --set image.tag=latest \
+  --set image.pullPolicy=Never \
+  --set db.user=prepper \
+  --set db.password=prepper \
+  --set auth.adminPassword=admin \
+  --set auth.userPassword=user
+```
+
+`image.pullPolicy=Never` keeps Kubernetes from trying to pull the locally built image from a registry.
 
 Check pod status:
 
@@ -56,7 +83,7 @@ kubectl get pods -n prepper
 
 Both pods should reach `Running` within a minute or two.
 
-### 4 — Verify
+### 5 — Verify
 
 Forward the service port locally:
 
@@ -74,10 +101,11 @@ curl http://localhost:8080/q/health
 curl -u <username>:<password> http://localhost:8080/products
 ```
 
-### 5 — Teardown
+### 6 — Teardown
 
 ```bash
-helmfile destroy
+helm uninstall prepper-backend -n prepper
+helm uninstall prepper-postgres -n prepper
 ```
 
 This removes both releases but leaves the `prepper` namespace and any PersistentVolumeClaims. To clean up completely:
@@ -128,18 +156,39 @@ kubectl create secret generic prepper-backend-credentials \
 
 ---
 
+## Full stack (Helmfile)
+
+The `prepper-infra` repo deploys the whole Prepper stack — backend, frontend, and PostgreSQL — pinning each to a released chart version. It consumes the published chart above; nothing in this repo is referenced directly. See that repo's README for setup, and bump the `backend:` version in its `helmfile.yaml` to roll out a new backend release.
+
+---
+
 ## Configuration reference
 
-| Helm value | Description |
-|---|---|
-| `db.host` | PostgreSQL hostname |
-| `db.user` | Database username |
-| `db.password` | Database password |
-| `db.name` | Database name |
-| `auth.adminPassword` | Password for the seeded admin user |
-| `auth.userPassword` | Password for the seeded regular user |
+| Helm value | Default | Description |
+|---|---|---|
+| `image.repository` | `ghcr.io/osbe/prepper-backend` | Image to deploy |
+| `image.tag` | `""` (falls back to chart `appVersion`) | Image tag |
+| `image.pullPolicy` | `IfNotPresent` | Set to `Never` for locally built images |
+| `replicaCount` | `1` | Number of pods |
+| `db.host` | `prepper-postgres-postgresql` | PostgreSQL hostname |
+| `db.port` | `5432` | PostgreSQL port |
+| `db.user` | `CHANGEME` | Database username |
+| `db.password` | `CHANGEME` | Database password |
+| `db.name` | `prepper` | Database name |
+| `db.createSecret` | `true` | Render the DB credentials Secret from these values |
+| `db.schemaGeneration` | `update` | Hibernate schema mode (`DB_SCHEMA_GENERATION`) — `update`, `validate`, `none`, `drop-and-create` |
+| `auth.adminPassword` | `CHANGEME` | Password for the seeded admin user |
+| `auth.userPassword` | `CHANGEME` | Password for the seeded regular user |
+| `auth.createSecret` | `true` | Render the auth Secret from these values |
+| `service.type` / `service.port` | `ClusterIP` / `8080` | Service exposure |
+| `resources` | 100m/256Mi → 500m/512Mi | Container requests and limits |
+| `fullnameOverride` | `prepper-backend` | Name for the rendered resources, and the prefix of the Secret and ConfigMap names |
+| `livenessProbe.initialDelaySeconds` / `periodSeconds` | `30` / `10` | Liveness probe timing on `/q/health/live` |
+| `readinessProbe.initialDelaySeconds` / `periodSeconds` | `15` / `5` | Readiness probe timing on `/q/health/ready` |
 
-The chart creates a Kubernetes Secret from these values when `db.createSecret: true` and `auth.createSecret: true` (both default to `true`).
+Seeded user passwords are re-applied on every pod start — the app deletes and recreates both users at boot (`Startup.java`), so changing `auth.*` and upgrading the release is enough to rotate them.
+
+With `db.createSecret: false` or `auth.createSecret: false`, the chart skips rendering that Secret but the Deployment still mounts it by name — you must create `prepper-backend-db-secret` (keys `DB_USER`, `DB_PASSWORD`) or `prepper-backend-auth-secret` (keys `APP_ADMIN_PASSWORD`, `APP_USER_PASSWORD`) yourself.
 
 ## Chart structure
 
@@ -148,8 +197,10 @@ app/helm/
   Chart.yaml
   values.yaml                  ← defaults
   templates/
+    _helpers.tpl               ← name and label helpers
     deployment.yaml            ← liveness/readiness probes on /q/health/live and /q/health/ready
     service.yaml               ← ClusterIP on port 8080
     secret.yaml                ← DB credentials (rendered when db.createSecret: true)
-    configmap.yaml             ← DB_URL, QUARKUS_HTTP_AUTH_BASIC
+    auth-secret.yaml           ← seeded user passwords (rendered when auth.createSecret: true)
+    configmap.yaml             ← DB_URL, DB_SCHEMA_GENERATION, QUARKUS_HTTP_AUTH_BASIC
 ```

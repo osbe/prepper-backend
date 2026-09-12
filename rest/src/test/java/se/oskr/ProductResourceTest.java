@@ -357,4 +357,70 @@ class ProductResourceTest {
         .then()
         .statusCode(400);
   }
+
+  @Test
+  void createProductWithoutNameReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"category": "WATER", "unit": "LITERS", "targetQuantity": 1}
+            """)
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void createProductWithoutCategoryReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"name": "X", "unit": "LITERS", "targetQuantity": 1}
+            """)
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void createProductWithoutTargetQuantityReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"name": "X", "category": "WATER", "unit": "LITERS"}
+            """)
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void updateProductWithoutUnitReturns400() {
+    long id = createProduct("Water", "WATER", "LITERS", 10);
+
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"name": "Water", "category": "WATER", "targetQuantity": 10}
+            """)
+        .when()
+        .put("/products/{id}", id)
+        .then()
+        .statusCode(400);
+  }
 }
