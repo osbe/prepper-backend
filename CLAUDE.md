@@ -56,7 +56,7 @@ The `rest` module runs `openapi-generator-maven-plugin` (jaxrs-spec, interface-o
 
 `useBeanValidation=true`, so the `required:` lists in the spec become `@NotNull` on the generated models and `@Valid @NotNull` on the body parameters — the spec is what actually enforces required fields at runtime (via `quarkus-hibernate-validator`). Do not hand-write null checks in the resources for fields the spec already marks required; mark them required in the spec instead.
 
-Tags in the spec determine which interface a method belongs to: tag `Products` → `ProductsApi`, tag `Stock` → `StockApi`. `ProductResource` and `StockResource` implement these. `dateLibrary: java8` is set so date fields use `java.time.LocalDate`.
+The generator groups operations by the **first path segment**, not by tag (`useTags` is not enabled): `/products/...` → `ProductsApi`, `/stock/...` → `StockApi`, `/me` → `MeApi`. `ProductResource`, `StockResource` and `MeResource` implement these. Tags are still worth setting correctly — client generators and doc tools group by tag, so `/me` carries tag `Auth` to land in an `AuthApi` client class. `dateLibrary: java8` is set so date fields use `java.time.LocalDate`.
 
 `@QuarkusTest` tests live in the `rest` module. Auth uses a custom `UserIdentityProvider` (in `rest`) that delegates to `UserService` (in `core`) — this avoids `quarkus-security-jpa`'s `ApplicationIndexBuildItem` scanning limitation. The `rest` test classpath needs `rest/src/test/resources/application.properties`, which sets `quarkus.http.auth.basic=true`, `quarkus.datasource.db-kind=postgresql`, the two `app.auth.*-password` values the tests authenticate with, and `quarkus.hibernate-orm.database.generation=drop-and-create` (tests start from an empty schema, unlike dev and prod which use `update`).
 
@@ -66,4 +66,4 @@ Versions live in six files that must agree: `app/helm/Chart.yaml` (`version` and
 
 ## Documentation
 
-`README.md` (overview, API, dev workflow), `DEPLOY.md` (Kubernetes), `RELEASING.md` (release flow). Keep them in sync when changing config, env vars, or endpoints — the API table in `README.md` and the Helm value table in `DEPLOY.md` are the two that drift most easily.
+`README.md` (overview, API, dev workflow), `API_CLIENT.md` (client/mobile integration guide), `DEPLOY.md` (Kubernetes), `RELEASING.md` (release flow). Keep them in sync when changing config, env vars, or endpoints — the API table in `README.md` and the Helm value table in `DEPLOY.md` are the two that drift most easily. `API_CLIENT.md` documents server-side business rules (the 25% low-stock threshold, the 30-day expiry window, PUT's replace-all semantics) that clients are told not to reimplement — if you change any of those, update it.

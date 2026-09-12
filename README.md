@@ -40,6 +40,7 @@ The full contract is in [`rest/src/main/resources/openapi.yaml`](rest/src/main/r
 
 | Method | Path | Description |
 |---|---|---|
+| `GET` | `/me` | The authenticated user, their roles, and whether they may write |
 | `GET` | `/products` | List products (optional `?category=`), each with its `currentStock` |
 | `POST` | `/products` | Create a product |
 | `GET` | `/products/{id}` | Get one product with current stock |
@@ -67,6 +68,13 @@ Passwords come from `APP_ADMIN_PASSWORD` and `APP_USER_PASSWORD`, defaulting to 
 
 Unauthenticated requests get `401`; a `user` attempting a write gets `403`.
 
+There is no token endpoint and no session — clients send the Basic header on every request. `GET /me` is the credential check: `200` returns the username, roles, and a `canWrite` flag, `401` means the credentials are wrong. Clients should gate write UI on `canWrite` rather than on the username.
+
+```bash
+curl -u admin:admin http://localhost:8080/me
+# {"username":"admin","roles":["admin","user"],"canWrite":true}
+```
+
 ### Business rules worth knowing
 
 These are computed by the backend and are not configurable:
@@ -79,7 +87,7 @@ These are computed by the backend and are not configurable:
 
 ### Validation
 
-Required fields are enforced by Bean Validation against the `required:` lists in the OpenAPI spec — the generator emits `@NotNull`, so the spec is what the code checks. Two shapes of `400` come back:
+Field constraints are declared in the OpenAPI spec and enforced by Bean Validation — the generator emits `@NotNull`, `@Size` and `@DecimalMin` from the `required:`, `maxLength:` and `minimum:` entries, so the spec is what the code checks. Quantities and target quantities must be `>= 0`, and the string fields are capped at 255 characters to match their `varchar(255)` columns. Two shapes of `400` come back:
 
 - **A missing required field** returns JSON: `{"title": "Constraint Violation", "status": 400, "violations": [{"field": "createProduct.productRequest.name", "message": "must not be null"}]}`
 - **A value that is not accepted** — an unknown category or unit, say — returns a plain-text message.
@@ -94,9 +102,9 @@ rest/   JAX-RS resources, auth, OpenAPI spec — no business logic
 app/    aggregator: runnable app, configuration, Helm chart, Dockerfiles
 ```
 
-**The OpenAPI spec drives the HTTP layer.** `openapi-generator-maven-plugin` generates the JAX-RS interfaces (`se.oskr.api`) and DTOs (`se.oskr.model`) into `rest/target/generated-sources/` at build time; `ProductResource` and `StockResource` implement those interfaces. Generated sources are never edited by hand.
+**The OpenAPI spec drives the HTTP layer.** `openapi-generator-maven-plugin` generates the JAX-RS interfaces (`se.oskr.api`) and DTOs (`se.oskr.model`) into `rest/target/generated-sources/` at build time; `ProductResource`, `StockResource` and `MeResource` implement those interfaces. Generated sources are never edited by hand.
 
-To add an endpoint: edit `openapi.yaml`, rebuild so the interface regenerates, implement the new method in the matching resource, and put the logic in a service in `core/`. The `tags` on an operation decide which interface it lands on — `Products` → `ProductsApi`, `Stock` → `StockApi`.
+To add an endpoint: edit `openapi.yaml`, rebuild so the interface regenerates, implement the new method in the matching resource, and put the logic in a service in `core/`. The `jaxrs-spec` generator groups operations by the **first path segment**, not by tag — `/products/...` → `ProductsApi`, `/stock/...` → `StockApi`, `/me` → `MeApi`. Tags still matter for client generators and documentation, which do group by tag.
 
 Authentication uses a custom `UserIdentityProvider` rather than `quarkus-security-jpa`, because that extension only scans entities in the application's own module and would not see `User` in `core/`.
 
@@ -146,6 +154,7 @@ A native executable can be built with `./mvnw package -Dnative`, or `-Dnative -D
 
 ## Deployment and releases
 
+- [API_CLIENT.md](API_CLIENT.md) — building a frontend or mobile app against this API: auth flow, write semantics, business rules, and what the API deliberately does not do.
 - [DEPLOY.md](DEPLOY.md) — running it on Kubernetes, from a local cluster to the published Helm chart.
 - [RELEASING.md](RELEASING.md) — cutting a release, and what the tag triggers.
 

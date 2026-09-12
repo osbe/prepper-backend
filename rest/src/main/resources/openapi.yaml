@@ -2,10 +2,48 @@ openapi: 3.0.3
 info:
   title: Prepper Backend API
   version: 0.10.0
+servers:
+  - url: http://localhost:8080
+    description: >
+      Local development (`./mvnw quarkus:dev`), and the address a
+      `kubectl port-forward -n prepper svc/prepper-backend 8080:8080` exposes.
+  - url: "{scheme}://{host}"
+    description: >
+      A deployed instance. The Helm chart creates a ClusterIP Service only, so the host
+      is whatever Ingress, LoadBalancer or port-forward fronts it in your cluster —
+      substitute it here.
+    variables:
+      scheme:
+        default: https
+        enum:
+          - https
+          - http
+      host:
+        default: prepper-backend.example.com
 security:
   - basicAuth: []
 
 paths:
+  /me:
+    get:
+      summary: Get the currently authenticated user and their roles
+      description: >
+        Validates the HTTP Basic credentials on the request and reports the roles they
+        carry. This is the credential-check call for clients: `200` means the credentials
+        are valid, `401` means they are not. Gate write actions on `canWrite` (or on
+        `admin` appearing in `roles`) rather than on the username.
+      operationId: getCurrentUser
+      tags:
+        - Auth
+      responses:
+        "200":
+          description: The authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
   /products:
     get:
       summary: List all products
@@ -70,7 +108,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -96,7 +134,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -114,7 +152,7 @@ paths:
         "204":
           description: Deleted
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -137,7 +175,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/StockEntry'
         "404":
-          description: Product not found
+          $ref: '#/components/responses/NotFound'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -163,7 +201,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StockEntry'
         "404":
-          description: Product not found
+          $ref: '#/components/responses/NotFound'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -198,8 +236,11 @@ paths:
       parameters:
         - name: days
           in: query
+          description: Window size in days, counted from today inclusive.
           schema:
             type: integer
+            format: int32
+            minimum: 0
             default: 30
       responses:
         "200":
@@ -258,7 +299,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StockEntry'
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -286,7 +327,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StockEntry'
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -304,7 +345,7 @@ paths:
         "204":
           description: Deleted
         "404":
-          description: Not found
+          $ref: '#/components/responses/NotFound'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -320,16 +361,31 @@ components:
   responses:
     BadRequest:
       description: >
-        The request body is invalid. A missing required field yields a JSON body
-        `{"title": "Constraint Violation", "status": 400, "violations": [{"field": ..., "message": ...}]}`.
-        A value that is not accepted — e.g. an unknown category or unit — yields a
-        plain-text message instead.
+        The request body is invalid. Two different shapes come back, distinguished by
+        `Content-Type`. A field that violates the constraints declared in this spec —
+        missing when required, out of range, too long — yields `application/json`
+        conforming to ConstraintViolationProblem. A value that cannot be parsed at all,
+        such as an unknown category or unit, yields a bare `text/plain` message.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConstraintViolationProblem'
+        text/plain:
+          schema:
+            type: string
+            example: 'No enum constant se.oskr.model.Category.NOT_A_CATEGORY'
     Unauthorized:
-      description: Missing or invalid HTTP Basic credentials.
+      description: >
+        Missing or invalid HTTP Basic credentials. The body is empty; the response
+        carries a `WWW-Authenticate: Basic` header.
     Forbidden:
       description: >
         Authenticated, but the user lacks the role this operation requires. Writes
-        require the `admin` role.
+        require the `admin` role. The body is empty.
+    NotFound:
+      description: >
+        No resource exists with the given id. For the nested stock routes this also
+        covers a missing parent product. The body is empty.
   parameters:
     id:
       name: id
@@ -339,6 +395,53 @@ components:
         type: integer
         format: int64
   schemas:
+    CurrentUser:
+      type: object
+      required:
+        - username
+        - roles
+        - canWrite
+      properties:
+        username:
+          type: string
+        roles:
+          type: array
+          description: >
+            Roles held by this user. `user` grants the read-only GET endpoints; `admin`
+            additionally grants every write. The seeded admin holds both.
+          items:
+            type: string
+        canWrite:
+          type: boolean
+          description: >
+            True when `roles` contains `admin`, i.e. when this user may call the write
+            endpoints. Provided so clients can gate write UI without string matching.
+    Violation:
+      type: object
+      properties:
+        field:
+          type: string
+          description: >
+            Path to the offending field, prefixed with the operation and parameter name,
+            e.g. `createProduct.productRequest.name`. Strip everything up to the last dot
+            to map it onto a form field.
+        message:
+          type: string
+    ConstraintViolationProblem:
+      type: object
+      description: Body of a 400 caused by a Bean Validation failure.
+      properties:
+        title:
+          type: string
+          example: Constraint Violation
+        status:
+          type: integer
+          format: int32
+          example: 400
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
     ExpiryStatus:
       type: string
       enum:
@@ -373,6 +476,8 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 255
         category:
           $ref: '#/components/schemas/Category'
         unit:
@@ -380,8 +485,13 @@ components:
         targetQuantity:
           type: number
           format: double
+          minimum: 0
+          description: >
+            The amount you want on hand. A target of 0 opts the product out of the
+            low-stock report entirely.
         notes:
           type: string
+          maxLength: 255
     Product:
       type: object
       properties:
@@ -404,6 +514,9 @@ components:
           type: string
     StockEntryRequest:
       type: object
+      description: >
+        The full state of a stock entry. PUT replaces every field, so any optional field
+        omitted here is written as null — send the whole entry back, not just what changed.
       required:
         - quantity
         - expiryDate
@@ -411,8 +524,10 @@ components:
         quantity:
           type: number
           format: double
+          minimum: 0
         subType:
           type: string
+          maxLength: 255
           description: Variant or sub-type of the product (e.g. "Spaghetti" for a Pasta product)
         purchasedDate:
           type: string
@@ -422,8 +537,10 @@ components:
           format: date
         location:
           type: string
+          maxLength: 255
         notes:
           type: string
+          maxLength: 255
     StockEntry:
       type: object
       properties:
@@ -457,9 +574,13 @@ components:
             i18n key (e.g. "action.WATER.APPROACHING").
     StockEntryPatch:
       type: object
+      description: >
+        Partial update of a stock entry. Only the remaining quantity can be changed this
+        way; every other field is left untouched.
       required:
         - quantity
       properties:
         quantity:
           type: number
           format: double
+          minimum: 0

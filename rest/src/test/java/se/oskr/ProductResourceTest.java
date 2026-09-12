@@ -407,6 +407,56 @@ class ProductResourceTest {
   }
 
   @Test
+  void createProductWithNegativeTargetQuantityReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"name": "X", "category": "WATER", "unit": "LITERS", "targetQuantity": -1}
+            """)
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void createProductWithOverlongNameReturns400() {
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            String.format(
+                "{\"name\": \"%s\", \"category\": \"WATER\", \"unit\": \"LITERS\","
+                    + " \"targetQuantity\": 1}",
+                "x".repeat(256)))
+        .when()
+        .post("/products")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void createStockEntryWithNegativeQuantityReturns400() {
+    long productId = createProduct("Water", "WATER", "LITERS", 10);
+    given()
+        .auth()
+        .basic("admin", "admin")
+        .contentType(ContentType.JSON)
+        .body(
+            """
+            {"quantity": -5, "expiryDate": "2030-01-01"}
+            """)
+        .when()
+        .post("/products/{id}/stock", productId)
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
   void updateProductWithoutUnitReturns400() {
     long id = createProduct("Water", "WATER", "LITERS", 10);
 
