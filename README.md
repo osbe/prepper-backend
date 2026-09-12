@@ -138,6 +138,7 @@ PostgreSQL via Hibernate ORM Panache. The schema is managed with `quarkus.hibern
 | `DB_SCHEMA_GENERATION` | prod | Hibernate schema mode, defaults to `update`. Set through the chart's `db.schemaGeneration` value when deploying with Helm |
 | `APP_ADMIN_PASSWORD` | all | Seeded admin password, defaults to `admin` |
 | `APP_USER_PASSWORD` | all | Seeded user password, defaults to `user` |
+| `CORS_ORIGINS` | all | Comma-separated browser origins allowed to call the API. Defaults to the common localhost dev-server and Capacitor/Ionic origins. Never set it empty — Quarkus allows *every* origin when none are configured |
 
 In dev and test none of these need to be set.
 

@@ -180,6 +180,7 @@ The `prepper-infra` repo deploys the whole Prepper stack — backend, frontend, 
 | `auth.adminPassword` | `CHANGEME` | Password for the seeded admin user |
 | `auth.userPassword` | `CHANGEME` | Password for the seeded regular user |
 | `auth.createSecret` | `true` | Render the auth Secret from these values |
+| `cors.origins` | `http://localhost:3000` | Comma-separated browser origins allowed to call the API. Only browser-based clients need this; set it to your frontend's real origin. Never leave it empty — Quarkus allows every origin when none are configured |
 | `service.type` / `service.port` | `ClusterIP` / `8080` | Service exposure |
 | `resources` | 100m/256Mi → 500m/512Mi | Container requests and limits |
 | `fullnameOverride` | `prepper-backend` | Name for the rendered resources, and the prefix of the Secret and ConfigMap names |

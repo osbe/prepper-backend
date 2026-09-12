@@ -26,6 +26,12 @@ auth:
   userPassword: CHANGEME
   createSecret: true
 
+# Browser origins allowed to call the API. Only browser-based clients need this;
+# native mobile clients do not enforce CORS. Never leave it empty — Quarkus allows
+# every origin when no origins are configured.
+cors:
+  origins: http://localhost:3000
+
 resources:
   requests:
     cpu: 100m

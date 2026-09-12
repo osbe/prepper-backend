@@ -9,3 +9,4 @@ data:
   DB_URL: "jdbc:postgresql://{{ .Values.db.host }}:{{ .Values.db.port }}/{{ .Values.db.name }}"
   QUARKUS_HTTP_AUTH_BASIC: "true"
   DB_SCHEMA_GENERATION: {{ .Values.db.schemaGeneration | quote }}
+  CORS_ORIGINS: {{ .Values.cors.origins | quote }}

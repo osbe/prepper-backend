@@ -329,24 +329,40 @@ before you poll `/products` on a timer. Fetch on screen focus and pull-to-refres
 
 ## 11. CORS
 
-The backend sets no CORS configuration at all — there is no `quarkus.http.cors` property
-anywhere in the project.
+CORS is **enabled**, restricted to an explicit origin allowlist. This matters only for
+browser-based clients — native iOS, native Android, React Native and Flutter's native targets
+do not enforce CORS and are unaffected either way.
 
-This does not matter for a native app: **React Native, Flutter (native targets), native iOS and
-native Android do not enforce CORS.** It breaks web-based stacks — Flutter web, Expo web,
-Capacitor, Ionic, or any browser-hosted client — which will see requests fail preflight.
+The allowlist defaults to the usual local dev-server and WebView origins:
 
-If you need CORS, add it to `app/src/main/resources/application.properties`:
-
-```properties
-quarkus.http.cors.enabled=true
-quarkus.http.cors.origins=https://your-app-origin
-quarkus.http.cors.methods=GET,POST,PUT,PATCH,DELETE
-quarkus.http.cors.headers=authorization,content-type
+```
+http://localhost:3000    http://localhost:5173    http://localhost:8100
+http://localhost:19006   capacitor://localhost    ionic://localhost
 ```
 
-Set an explicit origin. A wildcard combined with Basic Auth credentials is the combination
-browsers refuse anyway.
+Allowed methods are `GET,POST,PUT,PATCH,DELETE,OPTIONS`; allowed request headers are
+`authorization` and `content-type`; `www-authenticate` is exposed so a client can read it off a
+`401`. Preflights are cached for 24 hours.
+
+**If your origin is not on that list, set `CORS_ORIGINS`** — a comma-separated list — rather than
+adding to the default:
+
+```bash
+CORS_ORIGINS=https://prepper.example.com,http://localhost:5173 ./mvnw quarkus:dev
+```
+
+Under Helm it is the `cors.origins` value:
+
+```bash
+helm upgrade ... --set cors.origins="https://prepper.example.com"
+```
+
+A request from an origin not on the list is rejected with `403 CORS Rejected - Invalid origin`
+at the preflight. If you see that in a browser console, the origin is the thing to fix — it is
+not an auth problem.
+
+Never set `CORS_ORIGINS` to an empty value: **Quarkus allows every origin when no origins are
+configured**, which is the opposite of what an empty setting looks like it should mean.
 
 ## 12. Generating a client
 
